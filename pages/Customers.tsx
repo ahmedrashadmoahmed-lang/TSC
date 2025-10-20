@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import type { Customer, Communication } from '../types';
 import Button from '../components/shared/Button';
@@ -5,10 +6,9 @@ import { Icon } from '../components/shared/Icon';
 import CustomerModal from '../components/crm/CustomerModal';
 
 export const initialCustomers: Customer[] = [
-    { id: 'C-001', name: 'شركة النور', contactPerson: 'أحمد محمود', email: 'ahmad@alnoor.com', phone: '0501234567', registrationDate: '2023-01-15' },
-    { id: 'C-002', name: 'مؤسسة الأمل', contactPerson: 'فاطمة علي', email: 'fatima@alamal.org', phone: '0557654321', registrationDate: '2023-03-22' },
-    { id: 'C-003', name: 'شركة المستقبل', contactPerson: 'خالد الغامدي', email: 'khalid@future.sa', phone: '0533344455', registrationDate: '2023-05-30' },
-    { id: 'C-004', name: 'عملاء الخير', contactPerson: 'سارة عبدالله', email: 'sara@alkhair.com', phone: '0541122334', registrationDate: '2023-07-01' },
+    { id: 'C-001', name: 'شركة الحلول المبتكرة', contactPerson: 'عبدالله السالم', email: 'a.salem@innovative.sa', phone: '0501112222', registrationDate: '2023-02-10' },
+    { id: 'C-002', name: 'مجموعة البناء الحديث', contactPerson: 'سليمان الحمد', email: 's.alhamad@modern-cg.com', phone: '0553334444', registrationDate: '2023-04-18' },
+    { id: 'C-003', name: 'مدارس الأجيال الجديدة', contactPerson: 'هند العتيبي', email: 'h.alotaibi@ngs.edu.sa', phone: '0535556666', registrationDate: '2023-06-05' },
 ];
 
 interface CustomersProps {
@@ -103,24 +103,33 @@ const Customers: React.FC<CustomersProps> = ({ customers, communications = [], o
                                 <th scope="col" className="px-6 py-3">جهة الاتصال</th>
                                 <th scope="col" className="px-6 py-3">البريد الإلكتروني</th>
                                 <th scope="col" className="px-6 py-3">الهاتف</th>
+                                <th scope="col" className="px-6 py-3 text-center">سجل التواصل</th>
                                 <th scope="col" className="px-6 py-3">تاريخ الانضمام</th>
                                 <th scope="col" className="px-6 py-3">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredCustomers.map(customer => (
+                            {filteredCustomers.map(customer => {
+                                const commsCount = communications.filter(c => c.customerId === customer.id).length;
+                                return (
                                 <tr key={customer.id} className="bg-white border-b hover:bg-slate-50">
                                     <td className="px-6 py-4 font-medium text-slate-900">{customer.name}</td>
                                     <td className="px-6 py-4 text-slate-600">{customer.contactPerson}</td>
                                     <td className="px-6 py-4">{customer.email}</td>
                                     <td className="px-6 py-4">{customer.phone}</td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center justify-center" title={`${commsCount} تواصل مسجل`}>
+                                            <Icon name="email" className="w-4 h-4 text-slate-400 ml-2" />
+                                            <span className="font-semibold text-slate-600">{commsCount}</span>
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4">{customer.registrationDate}</td>
                                     <td className="px-6 py-4 flex items-center gap-3 justify-end">
-                                        <button onClick={() => handleOpenModal(customer)} className="text-slate-500 hover:text-indigo-600"><Icon name="edit" className="w-5 h-5"/></button>
-                                        <button onClick={() => handleDeleteCustomer(customer.id)} className="text-slate-500 hover:text-red-600"><Icon name="delete" className="w-5 h-5"/></button>
+                                        <button onClick={() => handleOpenModal(customer)} className="text-slate-500 hover:text-indigo-600" title="تعديل العميل"><Icon name="edit" className="w-5 h-5"/></button>
+                                        <button onClick={() => handleDeleteCustomer(customer.id)} className="text-slate-500 hover:text-red-600" title="حذف العميل"><Icon name="delete" className="w-5 h-5"/></button>
                                     </td>
                                 </tr>
-                            ))}
+                            )})}
                         </tbody>
                     </table>
                 </div>

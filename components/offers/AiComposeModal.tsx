@@ -4,6 +4,7 @@ import Modal from '../shared/Modal';
 import { Icon } from '../shared/Icon';
 import Button from '../shared/Button';
 import type { Offer, Communication } from '../../types';
+import { useApiErrorHandler } from '../../hooks/useApiErrorHandler';
 
 interface AiComposeModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface AiComposeModalProps {
 const AiComposeModal: React.FC<AiComposeModalProps> = ({ isOpen, onClose, offer, mode, onSend }) => {
   const [content, setContent] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
+  const handleApiError = useApiErrorHandler();
 
   const handleGenerateContent = async () => {
     setIsLoading(true);
@@ -56,8 +58,8 @@ const AiComposeModal: React.FC<AiComposeModalProps> = ({ isOpen, onClose, offer,
         setContent(response.text);
 
     } catch (error) {
-        console.error("Error generating AI content:", error);
-        setContent('عذرًا، حدث خطأ أثناء إنشاء المحتوى. يرجى المحاولة مرة أخرى.');
+        handleApiError(error, 'AI Compose Modal');
+        setContent('عذرًا، حدث خطأ أثناء إنشاء المحتوى. يرجى مراجعة الإشعارات والمحاولة مرة أخرى.');
     } finally {
         setIsLoading(false);
     }

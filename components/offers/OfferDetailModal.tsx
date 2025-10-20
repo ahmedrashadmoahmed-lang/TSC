@@ -3,7 +3,7 @@ import Modal from '../shared/Modal';
 import Button from '../shared/Button';
 import { Icon } from '../shared/Icon';
 import StatusBadge from '../shared/StatusBadge';
-import AiSalesBoosterModal from './AiPricingAdvisorModal';
+import AiPricingAdvisorModal from './AiPricingAdvisorModal';
 import AiComposeModal from './AiComposeModal';
 import GeneratePoModal from './GeneratePoModal';
 import type { Offer, PurchaseOrder, Communication } from '../../types';
@@ -18,17 +18,25 @@ interface OfferDetailModalProps {
   communications: Communication[];
 }
 
+const COMMISSION_RATE = 0.05; // 5%
+
 const OfferDetailModal: React.FC<OfferDetailModalProps> = ({ isOpen, onClose, offer: initialOffer, onUpdate, onAddPurchaseOrders, onLogCommunication, communications }) => {
   const [offer, setOffer] = useState<Offer>(initialOffer);
-  const [isSalesBoosterOpen, setSalesBoosterOpen] = useState(false);
+  const [isPricingAdvisorOpen, setPricingAdvisorOpen] = useState(false);
   const [isComposeModalOpen, setComposeModalOpen] = useState(false);
   const [composeMode, setComposeMode] = useState<'email' | 'whatsapp'>('email');
   const [isGeneratePoModalOpen, setGeneratePoModalOpen] = useState(false);
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    // In a real app, this might trigger workflows
     const newStatus = e.target.value as Offer['status'];
-    setOffer(prev => ({...prev, status: newStatus}));
+    
+    // Calculate commission if status is changed to 'مقبول' and it hasn't been calculated yet
+    if (newStatus === 'مقبول' && !offer.commission && offer.totalSellingPrice > 0) {
+        const commission = offer.totalSellingPrice * COMMISSION_RATE;
+        setOffer(prev => ({...prev, status: newStatus, commission: commission }));
+    } else {
+        setOffer(prev => ({...prev, status: newStatus}));
+    }
   }
 
   const handleUpdate = () => {
@@ -84,6 +92,12 @@ const OfferDetailModal: React.FC<OfferDetailModalProps> = ({ isOpen, onClose, of
              <div>
                 <span className="font-bold text-slate-500">الإجمالي: </span>
                 <span className="text-2xl font-bold text-indigo-600">{offer.totalSellingPrice.toLocaleString()} ر.س</span>
+                 {offer.commission && (
+                    <div className="mt-1">
+                        <span className="font-bold text-slate-500">العمولة: </span>
+                        <span className="text-lg font-bold text-green-600">{offer.commission.toLocaleString()} ر.س</span>
+                    </div>
+                )}
              </div>
              <div className="flex gap-2">
                 {offer.status === 'مقبول' && (
@@ -92,7 +106,7 @@ const OfferDetailModal: React.FC<OfferDetailModalProps> = ({ isOpen, onClose, of
                       إنشاء أمر شراء
                   </Button>
                 )}
-                <Button variant="secondary" onClick={() => setSalesBoosterOpen(true)}>
+                <Button variant="secondary" onClick={() => setPricingAdvisorOpen(true)}>
                     <Icon name="ai" className="w-5 h-5 ml-2"/>
                     مُعزز المبيعات الذكي
                 </Button>
@@ -110,10 +124,10 @@ const OfferDetailModal: React.FC<OfferDetailModalProps> = ({ isOpen, onClose, of
         </div>
       </Modal>
 
-      {isSalesBoosterOpen && (
-          <AiSalesBoosterModal 
-              isOpen={isSalesBoosterOpen}
-              onClose={() => setSalesBoosterOpen(false)}
+      {isPricingAdvisorOpen && (
+          <AiPricingAdvisorModal 
+              isOpen={isPricingAdvisorOpen}
+              onClose={() => setPricingAdvisorOpen(false)}
               offer={offer}
               customerCommunications={customerCommunications}
           />

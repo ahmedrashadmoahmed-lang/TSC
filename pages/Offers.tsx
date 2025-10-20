@@ -6,27 +6,18 @@ import StatusBadge from '../components/shared/StatusBadge';
 import AddOfferModal from '../components/offers/AddOfferModal';
 import OfferDetailModal from '../components/offers/OfferDetailModal';
 
-export const initialOffers: Offer[] = [
-    { id: 'Q-2024-001', customerId: 'C-001', customerName: 'شركة النور', subject: 'توريد وتركيب نظام كاميرات مراقبة', issueDate: '2024-07-20', validUntil: '2024-08-05', status: 'قيد التسعير', items: [
-        { id: 'item-1', description: 'كاميرا مراقبة خارجية 4K', quantity: 10, supplierQuotes: [{ supplierId: 'S-001', supplierName: 'موردون ألفا', price: 350 }] },
-        { id: 'item-2', description: 'جهاز تسجيل شبكي (NVR) 16 قناة', quantity: 1, supplierQuotes: [{ supplierId: 'S-001', supplierName: 'موردون ألفا', price: 1200 }] },
-    ], totalSellingPrice: 0 },
-    { id: 'Q-2024-002', customerId: 'C-002', customerName: 'مؤسسة الأمل', subject: 'تجهيز قاعة اجتماعات', issueDate: '2024-07-18', validUntil: '2024-08-02', status: 'مرسل', items: [], totalSellingPrice: 45000 },
-    { id: 'Q-2024-003', customerId: 'C-003', customerName: 'شركة المستقبل', subject: 'عقد صيانة سنوي لأنظمة الشبكات', issueDate: '2024-07-15', validUntil: '2024-07-30', status: 'مقبول', items: [
-        { id: 'item-3', description: 'عقد صيانة سنوي شامل', quantity: 1, supplierQuotes: [{ supplierId: 'S-004', supplierName: 'خدمات الشبكة المتقدمة', price: 40000 }] },
-    ], totalSellingPrice: 75000 },
-];
-
 interface OffersProps {
     customers: Customer[];
+    offers: Offer[];
     communications: Communication[];
     onAddPurchaseOrders: (orders: Omit<PurchaseOrder, 'id'>[]) => void;
     onLogCommunication: (communicationData: Omit<Communication, 'id'>) => void;
     onSaveCustomer: (customerData: Omit<Customer, 'id' | 'registrationDate'>) => Customer;
+    onAddOffer: (offerData: Omit<Offer, 'id' | 'status' | 'items' | 'totalSellingPrice' | 'commission'>) => void;
+    onUpdateOffer: (offer: Offer) => void;
 }
 
-const Offers: React.FC<OffersProps> = ({ customers, communications, onAddPurchaseOrders, onLogCommunication, onSaveCustomer }) => {
-    const [offers, setOffers] = useState<Offer[]>(initialOffers);
+const Offers: React.FC<OffersProps> = ({ customers, offers, communications, onAddPurchaseOrders, onLogCommunication, onSaveCustomer, onAddOffer, onUpdateOffer }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<OfferStatus | 'الكل'>('الكل');
     const [isAddOfferModalOpen, setAddOfferModalOpen] = useState(false);
@@ -40,29 +31,12 @@ const Offers: React.FC<OffersProps> = ({ customers, communications, onAddPurchas
         });
     }, [offers, searchTerm, statusFilter]);
     
-    const handleAddOffer = (newOfferData: Omit<Offer, 'id' | 'status' | 'items' | 'totalSellingPrice'>) => {
-        const newOffer: Offer = {
-            ...newOfferData,
-            id: `Q-${new Date().getFullYear()}-${String(offers.length + 1).padStart(3, '0')}`,
-            status: 'جديد',
-            items: [],
-            totalSellingPrice: 0,
-        };
-        setOffers([newOffer, ...offers]);
-        setAddOfferModalOpen(false);
-    };
-
-    const handleUpdateOffer = (updatedOffer: Offer) => {
-        setOffers(offers.map(o => o.id === updatedOffer.id ? updatedOffer : o));
-        setSelectedOffer(null); // Close detail modal
-    };
-    
     return (
         <div className="space-y-6">
             <AddOfferModal 
                 isOpen={isAddOfferModalOpen} 
                 onClose={() => setAddOfferModalOpen(false)} 
-                onAdd={handleAddOffer}
+                onAdd={onAddOffer}
                 customers={customers}
                 onAddCustomer={onSaveCustomer}
             />
@@ -71,7 +45,7 @@ const Offers: React.FC<OffersProps> = ({ customers, communications, onAddPurchas
                     isOpen={!!selectedOffer}
                     onClose={() => setSelectedOffer(null)}
                     offer={selectedOffer}
-                    onUpdate={handleUpdateOffer}
+                    onUpdate={onUpdateOffer}
                     onAddPurchaseOrders={onAddPurchaseOrders}
                     onLogCommunication={onLogCommunication}
                     communications={communications}
@@ -120,24 +94,32 @@ const Offers: React.FC<OffersProps> = ({ customers, communications, onAddPurchas
                                 <th scope="col" className="px-6 py-3">رقم العرض</th>
                                 <th scope="col" className="px-6 py-3">العميل</th>
                                 <th scope="col" className="px-6 py-3">الموضوع</th>
+                                <th scope="col" className="px-6 py-3">الكمية</th>
                                 <th scope="col" className="px-6 py-3">المبلغ</th>
+                                <th scope="col" className="px-6 py-3">العمولة</th>
                                 <th scope="col" className="px-6 py-3">الحالة</th>
                                 <th scope="col" className="px-6 py-3">تاريخ الإصدار</th>
                                 <th scope="col" className="px-6 py-3"></th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredOffers.map(offer => (
+                            {filteredOffers.map(offer => {
+                                const totalQuantity = offer.items.reduce((sum, item) => sum + item.quantity, 0);
+                                return (
                                 <tr key={offer.id} className="bg-white border-b hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedOffer(offer)}>
                                     <td className="px-6 py-4 font-medium text-indigo-600">{offer.id}</td>
                                     <td className="px-6 py-4 text-slate-800">{offer.customerName}</td>
                                     <td className="px-6 py-4 max-w-xs truncate">{offer.subject}</td>
+                                    <td className="px-6 py-4">{totalQuantity > 0 ? totalQuantity : '-'}</td>
                                     <td className="px-6 py-4 font-semibold">{offer.totalSellingPrice.toLocaleString()} ر.س</td>
+                                    <td className="px-6 py-4 font-semibold text-green-600">
+                                        {offer.commission ? `${offer.commission.toLocaleString()} ر.س` : '-'}
+                                    </td>
                                     <td className="px-6 py-4"><StatusBadge status={offer.status} /></td>
                                     <td className="px-6 py-4">{offer.issueDate}</td>
                                     <td className="px-6 py-4 text-left"><Icon name="edit" className="w-5 h-5 text-slate-400"/></td>
                                 </tr>
-                            ))}
+                            )})}
                         </tbody>
                     </table>
                 </div>

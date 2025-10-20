@@ -4,6 +4,7 @@ import Modal from '../shared/Modal';
 import Button from '../shared/Button';
 import { Icon } from '../shared/Icon';
 import type { Invoice, Customer } from '../../types';
+import { useApiErrorHandler } from '../../hooks/useApiErrorHandler';
 
 interface ReminderModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface ReminderModalProps {
 const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, invoice, customer }) => {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const handleApiError = useApiErrorHandler();
 
   const handleGenerateReminder = async () => {
     setIsLoading(true);
@@ -55,8 +57,8 @@ const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, invoice,
       setContent(response.text);
 
     } catch (error) {
-      console.error("Error generating AI reminder:", error);
-      setContent('عذرًا، حدث خطأ أثناء إنشاء التذكير. يرجى المحاولة مرة أخرى أو كتابة الرسالة يدويًا.');
+      handleApiError(error, 'AI Reminder Modal');
+      setContent('عذرًا، حدث خطأ أثناء إنشاء التذكير. يرجى مراجعة الإشعارات والمحاولة مرة أخرى.');
     } finally {
       setIsLoading(false);
     }

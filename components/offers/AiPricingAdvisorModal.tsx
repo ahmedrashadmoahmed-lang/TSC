@@ -5,17 +5,19 @@ import { Icon } from '../shared/Icon';
 import Button from '../shared/Button';
 import type { Offer, Communication } from '../../types';
 import { initialInventoryItems } from '../../pages/Inventory';
+import { useApiErrorHandler } from '../../hooks/useApiErrorHandler';
 
-interface AiSalesBoosterModalProps {
+interface AiPricingAdvisorModalProps {
   isOpen: boolean;
   onClose: () => void;
   offer: Offer;
   customerCommunications: Communication[];
 }
 
-const AiSalesBoosterModal: React.FC<AiSalesBoosterModalProps> = ({ isOpen, onClose, offer, customerCommunications }) => {
+const AiPricingAdvisorModal: React.FC<AiPricingAdvisorModalProps> = ({ isOpen, onClose, offer, customerCommunications }) => {
   const [advice, setAdvice] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
+  const handleApiError = useApiErrorHandler();
 
   const handleGenerateAdvice = async () => {
     setIsLoading(true);
@@ -80,8 +82,8 @@ const AiSalesBoosterModal: React.FC<AiSalesBoosterModalProps> = ({ isOpen, onClo
         setAdvice(response.text);
 
     } catch (error) {
-        console.error("Error generating AI advice:", error);
-        setAdvice('عذرًا، حدث خطأ أثناء إنشاء النصيحة. يرجى المحاولة مرة أخرى.');
+        handleApiError(error, 'AI Pricing Advisor');
+        setAdvice('عذرًا، حدث خطأ أثناء إنشاء النصيحة. يرجى مراجعة الإشعارات والمحاولة مرة أخرى.');
     } finally {
         setIsLoading(false);
     }
@@ -121,4 +123,4 @@ const AiSalesBoosterModal: React.FC<AiSalesBoosterModalProps> = ({ isOpen, onClo
   );
 };
 
-export default AiSalesBoosterModal;
+export default AiPricingAdvisorModal;

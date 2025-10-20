@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import type { Supplier } from '../types';
 import Button from '../components/shared/Button';
@@ -5,10 +6,9 @@ import { Icon } from '../components/shared/Icon';
 import SupplierModal from '../components/crm/SupplierModal';
 
 export const initialSuppliers: Supplier[] = [
-    { id: 'S-001', name: 'موردون ألفا', contactPerson: 'علي حسن', email: 'ali@alpha.com', phone: '0512345678' },
-    { id: 'S-002', name: 'شركة بيتا للتوريدات', contactPerson: 'مريم يوسف', email: 'mariam@beta-supplies.sa', phone: '0598765432' },
-    { id: 'S-003', name: 'مؤسسة جاما', contactPerson: 'ياسر محمد', email: 'yasser@gamma.org', phone: '0522233344' },
-    { id: 'S-004', name: 'خدمات الشبكة المتقدمة', contactPerson: 'نورة خالد', email: 'noura@ans.net', phone: '0567890123' },
+    { id: 'S-001', name: 'تقنيات المستقبل للتجارة', contactPerson: 'محمد خان', email: 'sales@future-tech.com', phone: '0512345678' },
+    { id: 'S-002', name: 'الإبداع الرقمي للبرمجيات', contactPerson: 'فاطمة الزهراء', email: 'info@digital-creativity.sa', phone: '0598765432' },
+    { id: 'S-003', name: 'خبراء التركيب والصيانة', contactPerson: 'يوسف الأحمدي', email: 'support@experts-im.com', phone: '0522233344' },
 ];
 
 interface SuppliersProps {

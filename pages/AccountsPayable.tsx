@@ -6,6 +6,7 @@ import { Icon } from '../components/shared/Icon';
 import StatusBadge from '../components/shared/StatusBadge';
 import AddPayableModal from '../components/accounts-payable/AddPayableModal';
 import PayableAiSummaryModal from '../components/accounts-payable/PayableAiSummaryModal';
+import { useApiErrorHandler } from '../hooks/useApiErrorHandler';
 
 export const initialPayables: Payable[] = [
     {id: 'PAY-201', supplierId: 'S-001', supplierName: 'موردون ألفا', issueDate: '2024-07-05', dueDate: '2024-08-04', amount: 18000, status: 'مستحقة'},
@@ -27,6 +28,7 @@ const AccountsPayable: React.FC<AccountsPayableProps> = ({ suppliers, onSaveSupp
     const [isAiModalOpen, setAiModalOpen] = useState(false);
     const [aiSummary, setAiSummary] = useState('');
     const [isLoadingAi, setIsLoadingAi] = useState(false);
+    const handleApiError = useApiErrorHandler();
 
     const filteredPayables = useMemo(() => {
         return payables.filter(payable => {
@@ -78,8 +80,8 @@ const AccountsPayable: React.FC<AccountsPayableProps> = ({ suppliers, onSaveSupp
             setAiSummary(response.text);
 
         } catch (error) {
-            console.error("Error generating AI summary:", error);
-            setAiSummary('عذرًا، حدث خطأ أثناء إنشاء الملخص. يرجى المحاولة مرة أخرى.');
+            handleApiError(error, 'AccountsPayable Summary');
+            setAiSummary('عذرًا، حدث خطأ أثناء إنشاء الملخص. يرجى مراجعة الإشعارات والمحاولة مرة أخرى.');
         } finally {
             setIsLoadingAi(false);
         }

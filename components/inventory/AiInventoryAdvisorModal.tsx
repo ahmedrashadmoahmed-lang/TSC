@@ -3,6 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import Modal from '../shared/Modal';
 import { Icon } from '../shared/Icon';
 import type { InventoryItem } from '../../types';
+import { useApiErrorHandler } from '../../hooks/useApiErrorHandler';
 
 interface AiInventoryAdvisorModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface AiInventoryAdvisorModalProps {
 const AiInventoryAdvisorModal: React.FC<AiInventoryAdvisorModalProps> = ({ isOpen, onClose, inventoryItems }) => {
   const [advice, setAdvice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const handleApiError = useApiErrorHandler();
 
   const generateAdvice = async () => {
       setIsLoading(true);
@@ -44,8 +46,8 @@ const AiInventoryAdvisorModal: React.FC<AiInventoryAdvisorModalProps> = ({ isOpe
         setAdvice(response.text);
 
       } catch (error) {
-          console.error("Error generating inventory advice:", error);
-          setAdvice("عذرًا، حدث خطأ أثناء تحليل المخزون. يرجى المحاولة مرة أخرى.");
+          handleApiError(error, 'AI Inventory Advisor');
+          setAdvice("عذرًا، حدث خطأ أثناء تحليل المخزون. يرجى مراجعة الإشعارات والمحاولة مرة أخرى.");
       } finally {
           setIsLoading(false);
       }

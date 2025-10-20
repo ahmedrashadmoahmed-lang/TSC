@@ -3,37 +3,37 @@ import { GoogleGenAI } from "@google/genai";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import { Icon } from '../components/shared/Icon';
 import Button from '../components/shared/Button';
+import type { AiResponse, SavedReport } from '../types';
+import { useApiErrorHandler } from '../hooks/useApiErrorHandler';
 
 // Importing data from other modules
-import { initialInvoices } from './AccountsReceivable';
+import { initialInvoices, initialOffers, initialPurchaseOrders } from '../App';
 import { initialPayables } from './AccountsPayable';
-import { initialOffers } from './Offers';
 import { initialCustomers } from './Customers';
 import { initialInventoryItems } from './Inventory';
-// FIX: `initialPurchaseOrders` is exported from `App.tsx`, not `PurchaseOrders.tsx`.
-import { initialPurchaseOrders } from '../App';
-
-interface AiResponse {
-    summary: string;
-    chartType: 'line' | 'bar' | 'pie' | 'none';
-    chartData: any[];
-}
 
 const examplePrompts = [
     "قارن إجمالي المبيعات (الفواتير المدفوعة) مقابل إجمالي المصروفات (فواتير الموردين المدفوعة) خلال الأشهر الثلاثة الماضية.",
     "ما هي توقعات التدفق النقدي للشهر القادم بناءً على الفواتير المستحقة للدفع والمستحقة للتحصيل؟",
     "من هم أكبر 3 عملاء من حيث قيمة الفواتير الإجمالية؟ اعرض النتيجة في مخطط دائري.",
-    "حلل ربحية عرض السعر Q-2024-003.",
+    "حلل ربحية عرض السعر Q-24-02.",
 ];
 
-const AiReports: React.FC = () => {
+interface AiReportsProps {
+    savedReports: SavedReport[];
+    onSaveReport: (reportData: { query: string; response: AiResponse }) => void;
+    onDeleteReport: (reportId: string) => void;
+}
+
+const AiReports: React.FC<AiReportsProps> = ({ savedReports, onSaveReport, onDeleteReport }) => {
     const [query, setQuery] = useState<string>('');
     const [aiResponse, setAiResponse] = useState<AiResponse | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const handleApiError = useApiErrorHandler();
 
-    const handleGenerateReport = async () => {
-        if (!query.trim()) {
+    const handleGenerateReport = async (promptQuery: string = query) => {
+        if (!promptQuery.trim()) {
             setError("يرجى إدخال سؤال للبدء.");
             return;
         }
@@ -45,30 +45,23 @@ const AiReports: React.FC = () => {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
             
-            // Format the data for the prompt
             const dataContext = `
                 **بيانات الذمم المدينة (الفواتير):**
                 ${JSON.stringify(initialInvoices.slice(0, 10), null, 2)}
-
                 **بيانات الذمم الدائنة (فواتير الموردين):**
                 ${JSON.stringify(initialPayables.slice(0, 10), null, 2)}
-                
                 **بيانات عروض الأسعار:**
                 ${JSON.stringify(initialOffers.slice(0, 10).map(o => ({...o, items: o.items.length})), null, 2)}
-
                 **بيانات أوامر الشراء:**
                 ${JSON.stringify(initialPurchaseOrders.slice(0, 10).map(po => ({...po, items: po.items.length})), null, 2)}
             `;
 
             const prompt = `
                 أنت محلل مالي وخبير في ذكاء الأعمال. مهمتك هي تحليل البيانات المالية التالية لشركة صغيرة والإجابة على سؤال المستخدم.
-                
                 **البيانات المتاحة:**
                 ${dataContext}
-
                 **سؤال المستخدم:**
-                "${query}"
-
+                "${promptQuery}"
                 **المطلوب:**
                 قدم إجابتك بتنسيق JSON حصريًا. يجب أن يحتوي كائن JSON على المفاتيح التالية:
                 1.  "summary": سلسلة نصية (string) تحتوي على إجابة نصية مفصلة وواضحة لسؤال المستخدم. استخدم تنسيق الماركداون الخفيف (مثل **للنص العريض** والقوائم النقطية) لجعل الملخص سهل القراءة.
@@ -93,15 +86,45 @@ const AiReports: React.FC = () => {
             }
 
         } catch (e) {
-            console.error("Error generating AI report:", e);
+            handleApiError(e, "AI Reports Generation");
             setError("حدث خطأ أثناء الاتصال بالذكاء الاصطناعي. يرجى المحاولة مرة أخرى.");
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleSaveCurrentReport = () => {
+        if (aiResponse) {
+            const isAlreadySaved = savedReports.some(r => r.query === query && JSON.stringify(r.response) === JSON.stringify(aiResponse));
+            if (isAlreadySaved) {
+                alert("هذا التقرير تم حفظه مسبقاً.");
+            } else {
+                onSaveReport({ query, response: aiResponse });
+                alert("تم حفظ التقرير بنجاح!");
+            }
+        }
+    };
+
+    const handleViewReport = (report: SavedReport) => {
+        setQuery(report.query);
+        setAiResponse(report.response);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDeleteReport = (reportId: string) => {
+        if (window.confirm("هل أنت متأكد من رغبتك في حذف هذا التقرير؟")) {
+            onDeleteReport(reportId);
+        }
+    };
+    
+    const handleSetQueryAndRun = (promptText: string) => {
+        setQuery(promptText);
+        handleGenerateReport(promptText);
+    }
+
+
     const renderChart = () => {
-        if (!aiResponse || aiResponse.chartType === 'none' || aiResponse.chartData.length === 0) {
+        if (!aiResponse || aiResponse.chartType === 'none' || !aiResponse.chartData || aiResponse.chartData.length === 0) {
             return null;
         }
 
@@ -167,14 +190,14 @@ const AiReports: React.FC = () => {
                         <span className="font-semibold">أمثلة:</span>
                         <div className="flex flex-wrap gap-2 mt-2">
                         {examplePrompts.map(p => (
-                            <button key={p} onClick={() => setQuery(p)} className="px-2 py-1 bg-slate-100 rounded hover:bg-slate-200 transition">
+                            <button key={p} onClick={() => handleSetQueryAndRun(p)} className="px-2 py-1 bg-slate-100 rounded hover:bg-slate-200 transition">
                                 {p}
                             </button>
                         ))}
                         </div>
                     </div>
                     <div className="text-right">
-                        <Button onClick={handleGenerateReport} disabled={isLoading}>
+                        <Button onClick={() => handleGenerateReport()} disabled={isLoading}>
                             {isLoading ? (
                                 <>
                                     <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></span>
@@ -200,14 +223,44 @@ const AiReports: React.FC = () => {
 
             {aiResponse && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm animate-fade-in">
-                    <h3 className="text-xl font-bold text-slate-800 mb-4">نتائج التحليل</h3>
+                    <div className="flex justify-between items-center mb-4">
+                         <h3 className="text-xl font-bold text-slate-800">نتائج التحليل</h3>
+                         <Button variant="secondary" size="sm" onClick={handleSaveCurrentReport}>
+                            <Icon name="save" className="w-4 h-4 ml-2"/>
+                            حفظ التقرير
+                        </Button>
+                    </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="prose prose-sm max-w-none text-slate-700 whitespace-pre-wrap leading-relaxed">
-                            {aiResponse.summary}
+                           <div dangerouslySetInnerHTML={{ __html: aiResponse.summary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />') }} />
                         </div>
                         <div className="lg:border-r lg:pr-6 border-slate-200">
                            {renderChart() || <p className="text-center text-slate-400 p-8">لا يوجد مخطط بياني لهذه الإجابة.</p>}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {savedReports.length > 0 && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm">
+                    <h3 className="text-xl font-bold text-slate-800 mb-4">التقارير المحفوظة</h3>
+                    <div className="space-y-3">
+                        {savedReports.map(report => (
+                            <div key={report.id} className="p-4 border border-slate-200 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50">
+                                <div>
+                                    <p className="font-semibold text-slate-800">{report.query}</p>
+                                    <p className="text-xs text-slate-500">تم الحفظ في: {report.savedAt}</p>
+                                </div>
+                                <div className="flex gap-2 flex-shrink-0">
+                                    <Button variant="secondary" size="sm" onClick={() => handleViewReport(report)}>
+                                        عرض
+                                    </Button>
+                                    <Button variant="secondary" size="sm" className="bg-red-50 text-red-600 hover:bg-red-100 px-2.5" onClick={() => handleDeleteReport(report.id)}>
+                                        <Icon name="delete" className="w-4 h-4"/>
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}

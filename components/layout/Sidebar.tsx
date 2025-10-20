@@ -32,6 +32,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activePage }) => {
   const navItems = [
     { icon: 'dashboard' as const, label: 'لوحة القيادة', href: '#dashboard', id: 'dashboard' },
+    { icon: 'projects' as const, label: 'المشاريع', href: '#projects', id: 'projects' },
     { icon: 'offers' as const, label: 'عروض الأسعار', href: '#offers', id: 'offers' },
     { icon: 'customers' as const, label: 'العملاء', href: '#customers', id: 'customers' },
     { icon: 'receivable' as const, label: 'حسابات العملاء', href: '#receivable', id: 'receivable' },

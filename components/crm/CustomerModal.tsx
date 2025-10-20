@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Modal from '../shared/Modal';
 import Button from '../shared/Button';
 import type { Customer, Communication } from '../../types';
@@ -47,6 +47,10 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ isOpen, onClose, onSave, 
       phone,
     });
   };
+
+  const sortedCommunications = useMemo(() => {
+    return [...communications].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [communications]);
 
   const modalTitle = customer ? 'تعديل بيانات العميل' : 'إضافة عميل جديد';
 
@@ -102,20 +106,22 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ isOpen, onClose, onSave, 
         {customer && (
           <div className="pt-4 border-t border-slate-200">
             <h3 className="text-lg font-semibold text-slate-800 mb-2">سجل التواصل</h3>
-            {communications.length > 0 ? (
+            {sortedCommunications.length > 0 ? (
               <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
-                {communications.map(comm => (
-                  <div key={comm.id} className="flex items-start gap-3 p-2 bg-slate-50 rounded-lg">
+                {sortedCommunications.map(comm => (
+                  <div key={comm.id} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
                     <Icon name={comm.type === 'Email' ? 'email' : 'whatsapp'} className="w-5 h-5 text-slate-500 mt-1 flex-shrink-0" />
-                    <div>
+                    <div className="flex-1">
                       <p className="font-semibold text-slate-700 text-sm">{comm.summary}</p>
-                      <p className="text-xs text-slate-500">{comm.date}</p>
+                      <p className="text-xs text-slate-500 mt-1">{comm.date}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500 text-center py-4">لا يوجد سجل تواصل لهذا العميل.</p>
+              <div className="text-center p-4 border-2 border-dashed border-slate-200 rounded-lg">
+                <p className="text-sm text-slate-500">لا يوجد سجل تواصل لهذا العميل.</p>
+              </div>
             )}
           </div>
         )}

@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
+
 export type IconName = 
   'dashboard' | 'receivable' | 'payable' | 'reports' | 'cash' | 'upArrow' | 'downArrow' |
   'search' | 'notification' | 'settings' | 'add' | 'ai' | 'edit' | 'delete' | 'close' |
   'offers' | 'info' | 'checkmark' | 'send' | 'customers' | 'suppliers' | 'inventory' |
-  'purchase-order' | 'email' | 'whatsapp' | 'invoice';
+  'purchase-order' | 'email' | 'whatsapp' | 'invoice' | 'projects' | 'time' | 'save';
 
 export interface DashboardCardData {
   title: string;
@@ -34,6 +36,7 @@ export interface Invoice {
     dueDate: string;
     amount: number;
     status: InvoiceStatus;
+    projectId?: string;
 }
 
 export interface Customer {
@@ -55,6 +58,7 @@ export interface Payable {
     dueDate: string;
     amount: number;
     status: PayableStatus;
+    projectId?: string;
 }
 
 export type OfferStatus = 'جديد' | 'قيد التسعير' | 'مرسل' | 'مقبول' | 'مرفوض' | 'قيد التفاوض' | 'تحول لفاتورة' | 'تم إنشاء أمر شراء';
@@ -83,6 +87,8 @@ export interface Offer {
     status: OfferStatus;
     items: OfferItem[];
     totalSellingPrice: number;
+    commission?: number;
+    projectId?: string;
 }
 
 export interface Supplier {
@@ -128,6 +134,7 @@ export interface PurchaseOrder {
     items: PurchaseOrderItem[];
     totalAmount: number;
     status: PurchaseOrderStatus;
+    projectId?: string;
 }
 
 export interface Communication {
@@ -137,4 +144,37 @@ export interface Communication {
     type: 'Email' | 'WhatsApp';
     summary: string;
     offerId?: string;
+    projectId?: string;
+}
+
+export type ProjectStatus = 'تخطيط' | 'قيد التنفيذ' | 'مكتمل' | 'معلق';
+
+export interface Project {
+    id: string;
+    name: string;
+    customerId: string;
+    customerName: string;
+    status: ProjectStatus;
+}
+
+export interface TimeLog {
+    id: string;
+    projectId: string;
+    userName: string;
+    date: string;
+    hours: number;
+    task: string;
+}
+
+export interface AiResponse {
+    summary: string;
+    chartType: 'line' | 'bar' | 'pie' | 'none';
+    chartData: any[];
+}
+
+export interface SavedReport {
+    id: string;
+    savedAt: string;
+    query: string;
+    response: AiResponse;
 }

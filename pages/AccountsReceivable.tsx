@@ -8,22 +8,16 @@ import AddInvoiceModal from '../components/accounts-receivable/AddInvoiceModal';
 import AiSummaryModal from '../components/accounts-receivable/AiSummaryModal';
 import ReminderModal from '../components/accounts-receivable/ReminderModal';
 import StatusBadge from '../components/shared/StatusBadge';
-
-export const initialInvoices: Invoice[] = [
-    {id: 'INV-101', customerId: 'C-001', customerName: 'شركة النور', issueDate: '2024-07-01', dueDate: '2024-07-31', amount: 25000, status: 'مستحقة'},
-    {id: 'INV-102', customerId: 'C-002', customerName: 'مؤسسة الأمل', issueDate: '2024-06-15', dueDate: '2024-07-15', amount: 12000, status: 'مدفوعة'},
-    {id: 'INV-103', customerId: 'C-003', customerName: 'شركة المستقبل', issueDate: '2024-05-20', dueDate: '2024-06-20', amount: 35000, status: 'متأخرة'},
-    {id: 'INV-104', customerId: 'C-001', customerName: 'شركة النور', issueDate: '2024-07-10', dueDate: '2024-08-10', amount: 8500, status: 'مستحقة'},
-    {id: 'INV-105', customerId: 'C-004', customerName: 'عملاء الخير', issueDate: '2024-04-01', dueDate: '2024-05-01', amount: 50000, status: 'متأخرة'},
-];
+import { useApiErrorHandler } from '../hooks/useApiErrorHandler';
 
 interface AccountsReceivableProps {
+    invoices: Invoice[];
+    setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>;
     customers: Customer[];
     onSaveCustomer: (customerData: Omit<Customer, 'id' | 'registrationDate'> & { id?: string }) => Customer;
 }
 
-const AccountsReceivable: React.FC<AccountsReceivableProps> = ({ customers, onSaveCustomer }) => {
-    const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+const AccountsReceivable: React.FC<AccountsReceivableProps> = ({ invoices, setInvoices, customers, onSaveCustomer }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<InvoiceStatus | 'الكل'>('الكل');
     const [isAddModalOpen, setAddModalOpen] = useState(false);
@@ -31,6 +25,38 @@ const AccountsReceivable: React.FC<AccountsReceivableProps> = ({ customers, onSa
     const [aiSummary, setAiSummary] = useState('');
     const [isLoadingAi, setIsLoadingAi] = useState(false);
     const [invoiceForReminder, setInvoiceForReminder] = useState<Invoice | null>(null);
+    const handleApiError = useApiErrorHandler();
+
+    useEffect(() => {
+        const checkAndUpdateInvoices = () => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize to midnight for fair comparison
+            
+            let needsUpdate = false;
+            const updatedInvoices = invoices.map(invoice => {
+                if (invoice.status === 'مدفوعة') {
+                    return invoice;
+                }
+                const dueDate = new Date(invoice.dueDate);
+                const expectedStatus: InvoiceStatus = dueDate < today ? 'متأخرة' : 'مستحقة';
+                
+                if (invoice.status !== expectedStatus) {
+                    needsUpdate = true;
+                    return { ...invoice, status: expectedStatus };
+                }
+                return invoice;
+            });
+
+            if (needsUpdate) {
+                setInvoices(updatedInvoices);
+            }
+        };
+
+        checkAndUpdateInvoices();
+        const intervalId = setInterval(checkAndUpdateInvoices, 3600000); // Check every hour
+        
+        return () => clearInterval(intervalId);
+    }, [invoices, setInvoices]);
 
     const filteredInvoices = useMemo(() => {
         return invoices.filter(invoice => {
@@ -45,7 +71,7 @@ const AccountsReceivable: React.FC<AccountsReceivableProps> = ({ customers, onSa
             ...newInvoiceData,
             id: `INV-${Math.floor(Math.random() * 1000) + 106}`
         };
-        setInvoices([newInvoice, ...invoices]);
+        setInvoices(prev => [newInvoice, ...prev]);
         setAddModalOpen(false);
     }
     
@@ -82,8 +108,8 @@ const AccountsReceivable: React.FC<AccountsReceivableProps> = ({ customers, onSa
             setAiSummary(response.text);
 
         } catch (error) {
-            console.error("Error generating AI summary:", error);
-            setAiSummary('عذرًا، حدث خطأ أثناء إنشاء الملخص. يرجى المحاولة مرة أخرى.');
+            handleApiError(error, 'AccountsReceivable Summary');
+            setAiSummary('عذرًا، حدث خطأ أثناء إنشاء الملخص. يرجى مراجعة الإشعارات والمحاولة مرة أخرى.');
         } finally {
             setIsLoadingAi(false);
         }
@@ -169,7 +195,7 @@ const AccountsReceivable: React.FC<AccountsReceivableProps> = ({ customers, onSa
                         </thead>
                         <tbody>
                             {filteredInvoices.map(invoice => (
-                                <tr key={invoice.id} className="bg-white border-b hover:bg-slate-50">
+                                <tr key={invoice.id} className={`bg-white border-b hover:bg-slate-50 transition-colors ${invoice.status === 'متأخرة' ? 'bg-red-50 hover:bg-red-100' : ''}`}>
                                     <td className="px-6 py-4 font-medium text-slate-900">{invoice.id}</td>
                                     <td className="px-6 py-4">{invoice.customerName}</td>
                                     <td className="px-6 py-4">{invoice.issueDate}</td>
